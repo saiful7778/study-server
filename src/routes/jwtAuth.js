@@ -20,7 +20,7 @@ route.get("/verfiy", verifyToken, (req, res) => {
   if (user?.email !== queryUser) {
     return res.status(400).send({ message: "not accessible" });
   }
-  res.send([]);
+  res.send({ message: "authorized" });
 });
 
 module.exports = route;
