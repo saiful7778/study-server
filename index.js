@@ -8,7 +8,6 @@ const port = process.env.PORT || 5001;
 
 // main application component
 const app = express();
-
 // add middleware
 app.use(
   cors({
