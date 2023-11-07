@@ -6,6 +6,9 @@ require("dotenv").config();
 // server listening port
 const port = process.env.PORT || 5001;
 
+// all routes
+const jwtAuthRoute = require("./src/routes/jwtAuth");
+
 // main application component
 const app = express();
 // add middleware
@@ -24,6 +27,8 @@ app.get("/", (req, res) => {
     status: "server is running",
   });
 });
+
+app.use("/jwtauth", jwtAuthRoute);
 
 app.listen(port, () => {
   console.log(`server is running on port: ${port}`);
