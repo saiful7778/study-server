@@ -14,7 +14,7 @@ const app = express();
 // add middleware
 app.use(
   cors({
-    origin: ["http://localhost:"],
+    origin: ["http://localhost:5173","https://study-72c82.web.app"],
     credentials: true,
     methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
   })
