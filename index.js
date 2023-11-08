@@ -8,13 +8,14 @@ const port = process.env.PORT || 5001;
 
 // all routes
 const jwtAuthRoute = require("./src/routes/jwtAuth");
+const assignmentRoute = require("./src/routes/assignment");
 
 // main application component
 const app = express();
 // add middleware
 app.use(
   cors({
-    origin: ["http://localhost:5173","https://study-72c82.web.app"],
+    origin: ["http://localhost:5173", "https://study-72c82.web.app"],
     credentials: true,
     methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
   })
@@ -29,6 +30,7 @@ app.get("/", (req, res) => {
 });
 
 app.use("/jwtauth", jwtAuthRoute);
+app.use("/assignment", assignmentRoute);
 
 app.listen(port, () => {
   console.log(`server is running on port: ${port}`);
