@@ -13,6 +13,12 @@ route.post("/", async (req, res) => {
     .send({ success: true });
 });
 
+route.post("/logout", async (req, res) => {
+  res
+    .clearCookie("token", { maxAge: 0, secure: false })
+    .send({ success: true });
+});
+
 // verfiy jwt token
 route.get("/verfiy", verifyToken, (req, res) => {
   const user = req.user;
