@@ -8,7 +8,10 @@ const port = process.env.PORT || 5001;
 
 // all routes
 const jwtAuthRoute = require("./src/routes/jwtAuth");
-const assignmentRoute = require("./src/routes/assignment");
+const {
+  assignmentRoute,
+  assignmentsRoute,
+} = require("./src/routes/assignment");
 
 // main application component
 const app = express();
@@ -30,6 +33,7 @@ app.get("/", (req, res) => {
 });
 
 app.use("/jwtauth", jwtAuthRoute);
+app.use("/assignments", assignmentsRoute);
 app.use("/assignment", assignmentRoute);
 
 app.listen(port, () => {

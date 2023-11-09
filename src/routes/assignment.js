@@ -6,6 +6,7 @@ const verifyTokenAndKey = require("../middleware/verifyTokenKey");
 const { ObjectId } = require("mongodb");
 
 const route = express.Router();
+const assignmentsRoute = express.Router();
 
 route.post("/new", verifyToken, verifyTokenAndKey, (req, res) => {
   const assignmentData = req.body;
@@ -33,7 +34,6 @@ route.get("/own", verifyToken, verifyTokenAndKey, (req, res) => {
 
 route.get("/:assignmentID", verifyToken, verifyTokenAndKey, (req, res) => {
   const assignmentID = req.params.assignmentID;
-  const keyEmail = req.query?.email;
   serverError(async () => {
     const query = { _id: new ObjectId(assignmentID) };
     const result = await assignmentColl.findOne(query);
@@ -46,8 +46,9 @@ route.get("/:assignmentID", verifyToken, verifyTokenAndKey, (req, res) => {
 
 route.delete("/:assignmentID", verifyToken, verifyTokenAndKey, (req, res) => {
   const assignmentID = req.params.assignmentID;
+  const keyEmail = req.query?.email;
   serverError(async () => {
-    const query = { _id: new ObjectId(assignmentID) };
+    const query = { _id: new ObjectId(assignmentID), adminEmail: keyEmail };
     const result = await assignmentColl.deleteOne(query);
     if (!result) {
       return res.status(404).send({ message: false });
@@ -56,4 +57,16 @@ route.delete("/:assignmentID", verifyToken, verifyTokenAndKey, (req, res) => {
   }, res);
 });
 
-module.exports = route;
+const assignmentRoute = route;
+
+assignmentsRoute.get("/", (req, res) => {
+  serverError(async () => {
+    const result = await assignmentColl.find().toArray();
+    if (!result) {
+      return res.status(404).send({ message: false });
+    }
+    res.status(200).send(result);
+  }, res);
+});
+
+module.exports = { assignmentRoute, assignmentsRoute };
