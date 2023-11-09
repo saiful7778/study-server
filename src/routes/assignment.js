@@ -7,13 +7,8 @@ const { ObjectId } = require("mongodb");
 
 const route = express.Router();
 
-route.post("/new", verifyToken, (req, res) => {
-  const tokenUser = req.user;
-  const keyEmail = req.query?.email;
+route.post("/new", verifyToken, verifyTokenAndKey, (req, res) => {
   const assignmentData = req.body;
-  if (tokenUser?.email !== keyEmail) {
-    return res.status(400).send({ message: "not accessible" });
-  }
   serverError(async () => {
     const result = await assignmentColl.insertOne(assignmentData);
     if (result.acknowledged) {
@@ -24,16 +19,40 @@ route.post("/new", verifyToken, (req, res) => {
   }, res);
 });
 
+route.get("/own", verifyToken, verifyTokenAndKey, (req, res) => {
+  const keyEmail = req.query?.email;
+  serverError(async () => {
+    const query = { adminEmail: keyEmail };
+    const result = await assignmentColl.find(query).toArray();
+    if (!result) {
+      return res.status(404).send({ message: false });
+    }
+    res.status(200).send(result);
+  }, res);
+});
+
 route.get("/:assignmentID", verifyToken, verifyTokenAndKey, (req, res) => {
   const assignmentID = req.params.assignmentID;
+  const keyEmail = req.query?.email;
   serverError(async () => {
     const query = { _id: new ObjectId(assignmentID) };
     const result = await assignmentColl.findOne(query);
-    if (result) {
-      res.status(200).send(result);
-    } else {
-      res.status(400).send({ message: false });
+    if (!result) {
+      return res.status(404).send({ message: false });
     }
+    res.status(200).send(result);
+  }, res);
+});
+
+route.delete("/:assignmentID", verifyToken, verifyTokenAndKey, (req, res) => {
+  const assignmentID = req.params.assignmentID;
+  serverError(async () => {
+    const query = { _id: new ObjectId(assignmentID) };
+    const result = await assignmentColl.deleteOne(query);
+    if (!result) {
+      return res.status(404).send({ message: false });
+    }
+    res.status(200).send(result);
   }, res);
 });
 
