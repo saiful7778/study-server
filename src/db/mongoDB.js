@@ -13,5 +13,6 @@ const client = new MongoClient(uri, {
 
 const studyDB = client.db("studyDB");
 const assignmentColl = studyDB.collection("assignmentColl");
+const userColl = studyDB.collection("userColl");
 
-module.exports = { assignmentColl };
+module.exports = { assignmentColl, userColl };

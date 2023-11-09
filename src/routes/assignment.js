@@ -71,6 +71,9 @@ route.patch(
   }
 );
 
+route.get("/submit", verifyToken, verifyTokenAndKey, (req, res) => {});
+route.post("/submit", (req, res) => {});
+
 // get single assignment data
 route.get("/:assignmentID", verifyToken, verifyTokenAndKey, (req, res) => {
   const assignmentID = req.params.assignmentID;
@@ -112,6 +115,18 @@ const assignmentRoute = route;
 assignmentsRoute.get("/", (req, res) => {
   serverError(async () => {
     const result = await assignmentColl.find().toArray();
+    if (!result) {
+      return res.status(404).send({ message: false });
+    }
+    res.status(200).send(result);
+  }, res);
+});
+
+assignmentsRoute.get("/q", (req, res) => {
+  const level = req.query?.level;
+  serverError(async () => {
+    const query = { level: level };
+    const result = await assignmentColl.find(query).toArray();
     if (!result) {
       return res.status(404).send({ message: false });
     }
