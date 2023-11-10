@@ -99,8 +99,14 @@ route.get("/submit", verifyToken, verifyTokenAndKey, (req, res) => {
 });
 
 route.post("/submit", verifyToken, verifyTokenAndKey, (req, res) => {
-  const { assignmentID, userEmail, userUid, userProfile, submittedData } =
-    req.body;
+  const {
+    assignmentID,
+    userEmail,
+    userName,
+    userUid,
+    userProfile,
+    submittedData,
+  } = req.body;
   serverError(async () => {
     const query = {
       _id: new ObjectId(assignmentID),
@@ -116,18 +122,17 @@ route.post("/submit", verifyToken, verifyTokenAndKey, (req, res) => {
         res.status(400).send("assignment already submitted");
       } else {
         const addSubmission = {
-          $set: {
-            submission: [
-              {
-                userEmail: userEmail,
-                userUid: userUid,
-                userProfile: userProfile,
-                submittedData: {
-                  ...submittedData,
-                  status: "pending",
-                },
+          $push: {
+            submission: {
+              userEmail: userEmail,
+              userUid: userUid,
+              userName: userName,
+              userProfile: userProfile,
+              submittedData: {
+                ...submittedData,
+                status: "pending",
               },
-            ],
+            },
           },
         };
         const result = await assignmentColl.updateOne(query, addSubmission, {
