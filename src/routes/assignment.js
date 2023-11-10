@@ -4,6 +4,7 @@ const serverError = require("../utility/serverError");
 const { assignmentColl, submitAssignmentColl } = require("../db/mongoDB");
 const verifyTokenAndKey = require("../middleware/verifyTokenKey");
 const { ObjectId } = require("mongodb");
+const getQuery = require("../utility/query");
 
 const route = express.Router();
 const assignmentsRoute = express.Router();
@@ -30,7 +31,7 @@ route.get("/own", verifyToken, verifyTokenAndKey, (req, res) => {
     };
     const result = await assignmentColl.find(query).toArray();
     if (!result) {
-      return res.status(404).send({ message: false });
+      return res.status(404).send({ success: false });
     }
     res.status(200).send(result);
   }, res);
@@ -64,7 +65,7 @@ route.patch(
         upsert: true,
       });
       if (!result) {
-        return res.status(404).send({ message: false });
+        return res.status(404).send({ success: false });
       }
       res.status(200).send(result);
     }, res);
@@ -92,9 +93,14 @@ route.get("/submit", verifyToken, verifyTokenAndKey, (req, res) => {
       .project(projection)
       .toArray();
     if (!result) {
-      return res.status(404).send({ message: false });
+      return res.status(404).send({ success: false });
     }
-    res.status(200).send(result);
+    const data = result.map((ele) => {
+      if (ele.submission) {
+        return { ...ele, submission: getQuery(ele.submission, idtok) };
+      }
+    });
+    res.status(200).send(data);
   }, res);
 });
 
@@ -247,7 +253,7 @@ route.get("/:assignmentID", verifyToken, verifyTokenAndKey, (req, res) => {
     const query = { _id: new ObjectId(assignmentID) };
     const result = await assignmentColl.findOne(query);
     if (!result) {
-      return res.status(404).send({ message: false });
+      return res.status(404).send({ success: false });
     }
     res.status(200).send(result);
   }, res);
@@ -268,7 +274,7 @@ route.delete(
       };
       const result = await assignmentColl.deleteOne(query);
       if (!result) {
-        return res.status(404).send({ message: false });
+        return res.status(404).send({ success: false });
       }
       res.status(200).send(result);
     }, res);
@@ -282,9 +288,9 @@ assignmentsRoute.get("/", (req, res) => {
   serverError(async () => {
     const result = await assignmentColl.find().toArray();
     if (!result) {
-      return res.status(404).send({ message: false });
+      return res.status(404).send({ success: false });
     }
-    res.status(200).send(result);
+    res.status(200).send({ success: true, result, count: result.length });
   }, res);
 });
 
@@ -294,9 +300,9 @@ assignmentsRoute.get("/q", (req, res) => {
     const query = { level: level };
     const result = await assignmentColl.find(query).toArray();
     if (!result) {
-      return res.status(404).send({ message: false });
+      return res.status(404).send({ success: false });
     }
-    res.status(200).send(result);
+    res.status(200).send({ success: true, result, count: result.length });
   }, res);
 });
 
