@@ -71,55 +71,75 @@ route.patch(
   }
 );
 
-// route.get("/submit", verifyToken, verifyTokenAndKey, (req, res) => {
-//     serverError(async () => {
-//         const query = { _id: new ObjectId(assignmentID) };
-//         const result = await submitAssignmentColl.findOne(query);
-//         if (!result) {
-//           return res.status(404).send({ message: false });
-//         }
-//         res.status(200).send(result);
-//       }, res);
-// });
-route.post("/submit", verifyToken, verifyTokenAndKey, (req, res) => {
-  const submittedData = req.body;
-  const { adminEmail, adminUid, submission } = submittedData || {};
+route.get("/submit", verifyToken, verifyTokenAndKey, (req, res) => {
+  const { email, idtok } = req.query;
   serverError(async () => {
     const query = {
-      adminEmail: adminEmail,
-      adminUid: adminUid,
+      "submission.userEmail": email,
+      "submission.userUid": idtok,
     };
-    const checking = await submitAssignmentColl.findOne(query);
+    const projection = {
+      thumbnailUrl: 1,
+      title: 1,
+      _id: 1,
+      mark: 1,
+      level: 1,
+      dueData: 1,
+      submission: 1,
+    };
+    const result = await assignmentColl
+      .find(query)
+      .project(projection)
+      .toArray();
+    if (!result) {
+      return res.status(404).send({ message: false });
+    }
+    res.status(200).send(result);
+  }, res);
+});
+
+route.post("/submit", verifyToken, verifyTokenAndKey, (req, res) => {
+  const { assignmentID, userEmail, userUid, userProfile, submittedData } =
+    req.body;
+  serverError(async () => {
+    const query = {
+      _id: new ObjectId(assignmentID),
+    };
+    const checking = await assignmentColl.findOne(query);
     if (checking) {
-      const exist = await submitAssignmentColl.findOne({
-        "submission.assignmentID": submission.assignmentID,
+      const exist = await assignmentColl.findOne({
+        ...query,
+        "submission.userEmail": userEmail,
+        "submission.userUid": userUid,
       });
       if (exist) {
         res.status(400).send("assignment already submitted");
       } else {
-        const result = await submitAssignmentColl.updateOne(
-          query,
-          {
-            $push: { submission: submission },
+        const addSubmission = {
+          $set: {
+            submission: [
+              {
+                userEmail: userEmail,
+                userUid: userUid,
+                userProfile: userProfile,
+                submittedData: {
+                  ...submittedData,
+                  status: "pending",
+                },
+              },
+            ],
           },
-          { upsert: true }
-        );
+        };
+        const result = await assignmentColl.updateOne(query, addSubmission, {
+          upsert: true,
+        });
         if (!result) {
           return res.status(404).send({ success: false });
         }
         res.status(200).send({ success: true, result });
       }
     } else {
-      const result = await submitAssignmentColl.insertOne({
-        adminEmail,
-        adminUid,
-        submission: [submission],
-      });
-      if (result.acknowledged) {
-        res.status(201).send({ success: true, itemId: result.insertedId });
-      } else {
-        res.status(400).send({ success: false });
-      }
+      res.status(404).send({ success: false });
     }
   }, res);
 });
