@@ -98,6 +98,33 @@ route.get("/submit", verifyToken, verifyTokenAndKey, (req, res) => {
   }, res);
 });
 
+route.get(
+  "/submit/:assignmentId",
+  verifyToken,
+  verifyTokenAndKey,
+  (req, res) => {
+    const assignmentId = req.params.assignmentId;
+    const { idtok } = req.query;
+    serverError(async () => {
+      const query = {
+        _id: new ObjectId(assignmentId),
+      };
+      const result = await assignmentColl.findOne(query);
+      if (result) {
+        const { submission } = result;
+        const remain = submission?.filter((ele) => ele.userUid === idtok);
+        const data = remain[0];
+        if (!remain) {
+          return res.status(404).send({ success: false });
+        }
+        res.status(200).send(data.submittedData);
+      } else {
+        res.status(404).send({ success: false });
+      }
+    }, res);
+  }
+);
+
 route.post("/submit", verifyToken, verifyTokenAndKey, (req, res) => {
   const {
     assignmentID,
