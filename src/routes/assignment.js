@@ -1,7 +1,7 @@
 const express = require("express");
 const verifyToken = require("../middleware/verifyToken");
 const serverError = require("../utility/serverError");
-const { assignmentColl } = require("../db/mongoDB");
+const { assignmentColl, submitAssignmentColl } = require("../db/mongoDB");
 const verifyTokenAndKey = require("../middleware/verifyTokenKey");
 const { ObjectId } = require("mongodb");
 
@@ -71,8 +71,58 @@ route.patch(
   }
 );
 
-route.get("/submit", verifyToken, verifyTokenAndKey, (req, res) => {});
-route.post("/submit", (req, res) => {});
+// route.get("/submit", verifyToken, verifyTokenAndKey, (req, res) => {
+//     serverError(async () => {
+//         const query = { _id: new ObjectId(assignmentID) };
+//         const result = await submitAssignmentColl.findOne(query);
+//         if (!result) {
+//           return res.status(404).send({ message: false });
+//         }
+//         res.status(200).send(result);
+//       }, res);
+// });
+route.post("/submit", verifyToken, verifyTokenAndKey, (req, res) => {
+  const submittedData = req.body;
+  const { adminEmail, adminUid, submission } = submittedData || {};
+  serverError(async () => {
+    const query = {
+      adminEmail: adminEmail,
+      adminUid: adminUid,
+    };
+    const checking = await submitAssignmentColl.findOne(query);
+    if (checking) {
+      const exist = await submitAssignmentColl.findOne({
+        "submission.assignmentID": submission.assignmentID,
+      });
+      if (exist) {
+        res.status(400).send("assignment already submitted");
+      } else {
+        const result = await submitAssignmentColl.updateOne(
+          query,
+          {
+            $push: { submission: submission },
+          },
+          { upsert: true }
+        );
+        if (!result) {
+          return res.status(404).send({ success: false });
+        }
+        res.status(200).send({ success: true, result });
+      }
+    } else {
+      const result = await submitAssignmentColl.insertOne({
+        adminEmail,
+        adminUid,
+        submission: [submission],
+      });
+      if (result.acknowledged) {
+        res.status(201).send({ success: true, itemId: result.insertedId });
+      } else {
+        res.status(400).send({ success: false });
+      }
+    }
+  }, res);
+});
 
 // get single assignment data
 route.get("/:assignmentID", verifyToken, verifyTokenAndKey, (req, res) => {
