@@ -49,7 +49,7 @@ route.patch(
       const updatedAssignment = {
         $set: {
           title: title,
-          mark: mark,
+          mark: parseFloat(mark),
           thumbnailUrl: thumbnailUrl,
           level: level,
           des: des,
@@ -95,6 +95,27 @@ route.get("/submit", verifyToken, verifyTokenAndKey, (req, res) => {
       return res.status(404).send({ message: false });
     }
     res.status(200).send(result);
+  }, res);
+});
+
+route.get("/submitted", verifyToken, verifyTokenAndKey, (req, res) => {
+  const query = {
+    submission: {
+      $elemMatch: {
+        "submittedData.status": "pending",
+      },
+      $exists: true,
+    },
+  };
+  serverError(async () => {
+    const submissionData = await assignmentColl
+      .find(query)
+      .project({ submission: 1 })
+      .toArray();
+    if (!submissionData) {
+      return res.status(404).send({ success: false });
+    }
+    res.status(200).send(submissionData);
   }, res);
 });
 
