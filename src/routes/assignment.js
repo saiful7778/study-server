@@ -285,12 +285,19 @@ const assignmentRoute = route;
 
 // get all assignments data
 assignmentsRoute.get("/", (req, res) => {
+  const { page, size, level } = req.query;
+  const query = level ? { level: level } : {};
   serverError(async () => {
-    const result = await assignmentColl.find().toArray();
+    const count = await assignmentColl.estimatedDocumentCount();
+    const result = await assignmentColl
+      .find(query)
+      .skip(parseInt(page))
+      .limit(parseInt(size))
+      .toArray();
     if (!result) {
       return res.status(404).send({ success: false });
     }
-    res.status(200).send({ success: true, result, count: result.length });
+    res.status(200).send({ success: true, result, count });
   }, res);
 });
 
