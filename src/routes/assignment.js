@@ -101,16 +101,24 @@ route.get("/submit", verifyToken, verifyTokenAndKey, (req, res) => {
 route.get("/submitted", verifyToken, verifyTokenAndKey, (req, res) => {
   const query = {
     submission: {
-      $elemMatch: {
-        "submittedData.status": "pending",
-      },
+      //   $elemMatch: {
+      //     "submittedData.status": "pending",
+      //   },
       $exists: true,
     },
+  };
+  const projection = {
+    title: 1,
+    _id: 1,
+    mark: 1,
+    level: 1,
+    dueData: 1,
+    submission: 1,
   };
   serverError(async () => {
     const submissionData = await assignmentColl
       .find(query)
-      .project({ submission: 1 })
+      .project(projection)
       .toArray();
     if (!submissionData) {
       return res.status(404).send({ success: false });
@@ -118,6 +126,41 @@ route.get("/submitted", verifyToken, verifyTokenAndKey, (req, res) => {
     res.status(200).send(submissionData);
   }, res);
 });
+
+route.patch(
+  "/submit/:assignmentId",
+  verifyToken,
+  verifyTokenAndKey,
+  (req, res) => {
+    const assignmentId = req.params.assignmentId;
+    const { idtok } = req.query;
+    const { mark, status, userEmail } = req.body;
+    const query = {
+      _id: new ObjectId(assignmentId),
+      submission: {
+        $elemMatch: {
+          userEmail: userEmail,
+          userUid: idtok,
+        },
+      },
+    };
+    serverError(async () => {
+      const result = await assignmentColl.findOne(query);
+      if (result) {
+        const updateMark = {
+          $set: {
+            "submission.$.submittedData.status": status,
+            "submission.$.submittedData.mark": mark,
+          },
+        };
+        const result = await assignmentColl.updateOne(query, updateMark);
+        res.send(result);
+      } else {
+        res.status(404).send({ success: false });
+      }
+    }, res);
+  }
+);
 
 route.get(
   "/submit/:assignmentId",
