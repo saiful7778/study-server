@@ -4,7 +4,7 @@ const serverError = require("../utility/serverError");
 const { assignmentColl, submitAssignmentColl } = require("../db/mongoDB");
 const verifyTokenAndKey = require("../middleware/verifyTokenKey");
 const { ObjectId } = require("mongodb");
-const getQuery = require("../utility/query");
+const { getQuery, getConditionQuery } = require("../utility/query");
 
 const route = express.Router();
 const assignmentsRoute = express.Router();
@@ -107,9 +107,9 @@ route.get("/submit", verifyToken, verifyTokenAndKey, (req, res) => {
 route.get("/submitted", verifyToken, verifyTokenAndKey, (req, res) => {
   const query = {
     submission: {
-      //   $elemMatch: {
-      //     "submittedData.status": "pending",
-      //   },
+      $elemMatch: {
+        "submittedData.status": "pending",
+      },
       $exists: true,
     },
   };
@@ -129,7 +129,13 @@ route.get("/submitted", verifyToken, verifyTokenAndKey, (req, res) => {
     if (!submissionData) {
       return res.status(404).send({ success: false });
     }
-    res.status(200).send(submissionData);
+    const data = submissionData.map((ele) => {
+      return {
+        ...ele,
+        submission: getConditionQuery(ele.submission, "pending"),
+      };
+    });
+    res.status(200).send(data);
   }, res);
 });
 
@@ -156,7 +162,7 @@ route.patch(
         const updateMark = {
           $set: {
             "submission.$.submittedData.status": status,
-            "submission.$.submittedData.mark": mark,
+            "submission.$.submittedData.mark": parseFloat(mark),
           },
         };
         const result = await assignmentColl.updateOne(query, updateMark);
@@ -285,14 +291,19 @@ const assignmentRoute = route;
 
 // get all assignments data
 assignmentsRoute.get("/", (req, res) => {
-  const { page, size, level } = req.query;
+  const { level } = req.query;
+
+  const page = parseInt(req.query?.page);
+  const size = parseInt(req.query?.size);
+  const skip = page * size;
+
   const query = level ? { level: level } : {};
   serverError(async () => {
     const count = await assignmentColl.estimatedDocumentCount();
     const result = await assignmentColl
       .find(query)
-      .skip(parseInt(page))
-      .limit(parseInt(size))
+      .skip(skip)
+      .limit(size)
       .toArray();
     if (!result) {
       return res.status(404).send({ success: false });

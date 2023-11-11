@@ -3,4 +3,11 @@ function getQuery(listData, queryData) {
   return remain;
 }
 
-module.exports = getQuery;
+function getConditionQuery(listData, queryData) {
+  const remain = listData.filter(
+    (ele) => ele.submittedData.status === queryData
+  );
+  return remain;
+}
+
+module.exports = { getQuery, getConditionQuery };
